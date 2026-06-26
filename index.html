@@ -287,29 +287,62 @@ function setBanner(type, msg) {
 // =====================
 // LOAD MASTER DATA
 // =====================
-async function loadMaster() {
+// =====================
+// LOAD MASTER — pakai JSONP (bypass CORS GAS)
+// =====================
+function loadMaster() {
   if (GAS_READ_URL === 'PASTE_URL_SCRIPT_BACA_DISINI') {
     toast('URL Script belum dikonfigurasi — mode demo', 'info');
     addOperator(); return;
   }
   setLoading(true, 'Memuat data operator...');
-  try {
-    const res  = await fetchWithTimeout(GAS_READ_URL, {}, 15000);
-    const json = await res.json();
+
+  // Nama callback unik agar tidak bentrok
+  const cbName = '__gasCallback_' + Date.now();
+
+  // Timeout handler
+  const timer = setTimeout(() => {
+    cleanup();
+    setLoading(false);
+    toast('Timeout memuat data — cek URL Script', 'error');
+    addOperator();
+  }, 15000);
+
+  function cleanup() {
+    clearTimeout(timer);
+    delete window[cbName];
+    const s = document.getElementById('jsonp-script');
+    if (s) s.remove();
+  }
+
+  // Fungsi callback yang dipanggil GAS
+  window[cbName] = function(json) {
+    cleanup();
+    setLoading(false);
     if (json.status === 'ok') {
       masterData = json.data;
       toast('Data operator dimuat (' + masterData.length + ')', 'success');
-    } else throw new Error(json.message);
-  } catch(e) {
-    toast('Gagal muat data: ' + e.message, 'error');
-  } finally {
-    setLoading(false);
+    } else {
+      toast('Error GAS: ' + (json.message||'unknown'), 'error');
+    }
     addOperator();
-  }
+  };
+
+  // Inject script tag JSONP
+  const script = document.createElement('script');
+  script.id  = 'jsonp-script';
+  script.src = GAS_READ_URL + '?callback=' + cbName;
+  script.onerror = () => {
+    cleanup();
+    setLoading(false);
+    toast('Gagal load script GAS — cek URL & akses', 'error');
+    addOperator();
+  };
+  document.head.appendChild(script);
 }
 
 // =====================
-// FETCH WITH TIMEOUT
+// FETCH WITH TIMEOUT (untuk POST/write)
 // =====================
 function fetchWithTimeout(url, opts={}, ms=12000) {
   const ctrl = new AbortController();
