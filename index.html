@@ -313,7 +313,8 @@ function loadMaster() {
     }
   } catch(e) {}
 
-  // Cache kosong / expired — loading biasa
+  // Cache kosong / expired — tampilkan form dulu, data GAS menyusul
+  addOperator(); // form langsung muncul
   _fetchMaster(true);
 }
 
@@ -335,7 +336,7 @@ function _fetchMaster(showLoader) {
     clearTimeout(timer);
     _cleanup(cbName);
     if (showLoader) setLoading(false);
-    if (json.status === 'ok' && json.data && json.data.length > 0) {
+    if (json.status === 'ok' && json.data) {
       masterData = json.data;
       try {
         localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: masterData }));
@@ -344,7 +345,7 @@ function _fetchMaster(showLoader) {
     } else if (showLoader) {
       toast('Error GAS: ' + (json.message||'unknown'), 'error');
     }
-    if (showLoader) addOperator();
+    // Tidak perlu panggil addOperator lagi — sudah dipanggil sebelum fetch
   };
 
   const script = document.createElement('script');
