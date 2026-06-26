@@ -286,12 +286,11 @@ function setBanner(type, msg) {
 }
 
 // =====================
-// LOAD MASTER — cache di localStorage, fetch hanya 1x
-// Cache berlaku 24 jam, setelah itu otomatis refresh
+// LOAD MASTER — cache di localStorage (pola stabil)
+// Cache berlaku 1 jam, background refresh tiap buka
 // =====================
-const CACHE_KEY    = 'litra_master_data';
-const CACHE_TS_KEY = 'litra_master_ts';
-const CACHE_TTL    = 60 * 60 * 1000; // 1 jam
+const CACHE_KEY = 'litra_master_db';
+const CACHE_TTL = 60 * 60 * 1000; // 1 jam
 
 function loadMaster() {
   if (GAS_READ_URL === 'PASTE_URL_SCRIPT_BACA_DISINI') {
@@ -299,28 +298,37 @@ function loadMaster() {
     addOperator(); return;
   }
 
-  // Cek cache di localStorage
+  // Coba ambil dari cache dulu
   try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    const ts     = localStorage.getItem(CACHE_TS_KEY);
-    const age    = Date.now() - parseInt(ts || '0');
-    if (cached && ts && age < CACHE_TTL) {
-      masterData = JSON.parse(cached);
-      addOperator();
-      return; // langsung pakai cache, tanpa loading
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const cache = JSON.parse(raw);
+      if (Date.now() - cache.ts < CACHE_TTL) {
+        masterData = cache.data;
+        addOperator();
+        // Refresh di background tanpa loading screen
+        fetchMaster(false);
+        return;
+      }
     }
   } catch(e) {}
 
-  // Cache kosong / expired -> fetch dari GAS
-  setLoading(true, 'Memuat data operator...');
+  // Cache kosong / expired — tarik dari GAS dengan loading
+  fetchMaster(true);
+}
+
+function fetchMaster(showLoader) {
+  if (showLoader) setLoading(true, 'Memuat data operator...');
 
   const cbName = '__gasCallback_' + Date.now();
 
   const timer = setTimeout(() => {
     cleanup();
-    setLoading(false);
-    toast('Timeout memuat data — cek URL Script', 'error');
-    addOperator();
+    if (showLoader) {
+      setLoading(false);
+      toast('Timeout memuat data — cek URL Script', 'error');
+      addOperator();
+    }
   }, 15000);
 
   function cleanup() {
@@ -332,18 +340,21 @@ function loadMaster() {
 
   window[cbName] = function(json) {
     cleanup();
-    setLoading(false);
-    if (json.status === 'ok') {
+    if (showLoader) setLoading(false);
+    if (json.status === 'ok' && json.data.length > 0) {
       masterData = json.data;
+      // Simpan cache dalam 1 objek (ts + data)
       try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(masterData));
-        localStorage.setItem(CACHE_TS_KEY, Date.now().toString());
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: masterData }));
       } catch(e) {}
-      toast('Data operator dimuat (' + masterData.length + ')', 'success');
-    } else {
+      if (showLoader) {
+        toast('Data operator dimuat (' + masterData.length + ')', 'success');
+        addOperator();
+      }
+    } else if (showLoader) {
       toast('Error GAS: ' + (json.message||'unknown'), 'error');
+      addOperator();
     }
-    addOperator();
   };
 
   const script = document.createElement('script');
@@ -351,26 +362,24 @@ function loadMaster() {
   script.src = GAS_READ_URL + '?callback=' + cbName;
   script.onerror = () => {
     cleanup();
-    setLoading(false);
-    toast('Gagal load script GAS — cek URL & akses', 'error');
-    addOperator();
+    if (showLoader) {
+      setLoading(false);
+      toast('Gagal load script GAS — cek URL & akses', 'error');
+      addOperator();
+    }
   };
   document.head.appendChild(script);
 }
 
-// Paksa refresh cache (jika data operator di sheet berubah)
+// Paksa refresh cache (tap ikon refresh di header)
 function refreshCache() {
-  try {
-    localStorage.removeItem(CACHE_KEY);
-    localStorage.removeItem(CACHE_TS_KEY);
-  } catch(e) {}
+  try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
   masterData = [];
   document.getElementById('operators-container').innerHTML = '';
   opCount = 0;
   loadMaster();
   toast('Memperbarui data operator...', 'info');
 }
-
 // =====================
 // FETCH WITH TIMEOUT (untuk POST/write)
 // =====================
@@ -682,50 +691,5 @@ function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 // =====================
 // INIT
 // =====================
-// =====================
-// BACKGROUND REFRESH — diam-diam update cache tiap 1 jam
-// =====================
-function bgRefresh() {
-  if (GAS_READ_URL === 'PASTE_URL_SCRIPT_BACA_DISINI') return;
-
-  const cbName = '__bgRefresh_' + Date.now();
-
-  const timer = setTimeout(() => {
-    delete window[cbName];
-    const s = document.getElementById('bg-script');
-    if (s) s.remove();
-  }, 15000);
-
-  window[cbName] = function(json) {
-    clearTimeout(timer);
-    delete window[cbName];
-    const s = document.getElementById('bg-script');
-    if (s) s.remove();
-    if (json.status === 'ok' && json.data.length > 0) {
-      masterData = json.data;
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(masterData));
-        localStorage.setItem(CACHE_TS_KEY, Date.now().toString());
-      } catch(e) {}
-      // tidak ada toast — diam-diam saja
-    }
-  };
-
-  const script = document.createElement('script');
-  script.id  = 'bg-script';
-  script.src = GAS_READ_URL + '?callback=' + cbName;
-  script.onerror = () => {
-    clearTimeout(timer);
-    delete window[cbName];
-    if (script.parentNode) script.parentNode.removeChild(script);
-  };
-  document.head.appendChild(script);
-}
-
-// Jalankan background refresh tiap 1 jam
-setInterval(bgRefresh, 60 * 60 * 1000);
 
 window.addEventListener('DOMContentLoaded', loadMaster);
-</script>
-</body>
-</html>
