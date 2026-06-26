@@ -145,7 +145,6 @@
     <div class="status-bar">
       <span>PT. ASI</span>
       <span id="waktu">--:--</span>
-      <span onclick="refreshCache()" style="cursor:pointer;color:rgba(255,255,255,0.25);font-size:13px" title="Refresh data operator"><i class="ti ti-refresh"></i></span>
     </div>
     <div class="logo-wrap">
       <div class="logo-box">L</div>
@@ -286,8 +285,8 @@ function setBanner(type, msg) {
 }
 
 // =====================
-// LOAD MASTER — cache di localStorage (pola stabil)
-// Cache berlaku 1 jam, background refresh tiap buka
+// LOAD MASTER DATA
+// Cache 1 jam di localStorage, background refresh diam-diam
 // =====================
 const CACHE_KEY = 'litra_master_db';
 const CACHE_TTL = 60 * 60 * 1000; // 1 jam
@@ -298,32 +297,33 @@ function loadMaster() {
     addOperator(); return;
   }
 
-  // Coba ambil dari cache dulu
+  // Cek cache dulu
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
       const cache = JSON.parse(raw);
       if (Date.now() - cache.ts < CACHE_TTL) {
+        // Pakai cache — langsung tampil tanpa loading
         masterData = cache.data;
         addOperator();
-        // Refresh di background tanpa loading screen
-        fetchMaster(false);
+        // Refresh di background tanpa ganggu tampilan
+        _fetchMaster(false);
         return;
       }
     }
   } catch(e) {}
 
-  // Cache kosong / expired — tarik dari GAS dengan loading
-  fetchMaster(true);
+  // Cache kosong / expired — loading biasa
+  _fetchMaster(true);
 }
 
-function fetchMaster(showLoader) {
+function _fetchMaster(showLoader) {
   if (showLoader) setLoading(true, 'Memuat data operator...');
 
   const cbName = '__gasCallback_' + Date.now();
 
   const timer = setTimeout(() => {
-    cleanup();
+    _cleanup(cbName);
     if (showLoader) {
       setLoading(false);
       toast('Timeout memuat data — cek URL Script', 'error');
@@ -331,37 +331,28 @@ function fetchMaster(showLoader) {
     }
   }, 15000);
 
-  function cleanup() {
-    clearTimeout(timer);
-    delete window[cbName];
-    const s = document.getElementById('jsonp-script');
-    if (s) s.remove();
-  }
-
   window[cbName] = function(json) {
-    cleanup();
+    clearTimeout(timer);
+    _cleanup(cbName);
     if (showLoader) setLoading(false);
-    if (json.status === 'ok' && json.data.length > 0) {
+    if (json.status === 'ok' && json.data && json.data.length > 0) {
       masterData = json.data;
-      // Simpan cache dalam 1 objek (ts + data)
       try {
         localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: masterData }));
       } catch(e) {}
-      if (showLoader) {
-        toast('Data operator dimuat (' + masterData.length + ')', 'success');
-        addOperator();
-      }
+      if (showLoader) toast('Data operator dimuat (' + masterData.length + ')', 'success');
     } else if (showLoader) {
       toast('Error GAS: ' + (json.message||'unknown'), 'error');
-      addOperator();
     }
+    if (showLoader) addOperator();
   };
 
   const script = document.createElement('script');
-  script.id  = 'jsonp-script';
+  script.id  = 'jsonp-script-' + cbName;
   script.src = GAS_READ_URL + '?callback=' + cbName;
   script.onerror = () => {
-    cleanup();
+    clearTimeout(timer);
+    _cleanup(cbName);
     if (showLoader) {
       setLoading(false);
       toast('Gagal load script GAS — cek URL & akses', 'error');
@@ -371,15 +362,12 @@ function fetchMaster(showLoader) {
   document.head.appendChild(script);
 }
 
-// Paksa refresh cache (tap ikon refresh di header)
-function refreshCache() {
-  try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
-  masterData = [];
-  document.getElementById('operators-container').innerHTML = '';
-  opCount = 0;
-  loadMaster();
-  toast('Memperbarui data operator...', 'info');
+function _cleanup(cbName) {
+  delete window[cbName];
+  const s = document.getElementById('jsonp-script-' + cbName);
+  if (s) s.remove();
 }
+
 // =====================
 // FETCH WITH TIMEOUT (untuk POST/write)
 // =====================
@@ -691,5 +679,7 @@ function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 // =====================
 // INIT
 // =====================
-
 window.addEventListener('DOMContentLoaded', loadMaster);
+</script>
+</body>
+</html>
