@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0A1A1D">
+  <title>LITRA-ASI — Absensi Operator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0A1A1D;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:0 0 40px}
+    .phone{width:100%;max-width:420px;background:#0A1A1D}
+
+    /* HEADER */
+    .header-zone{background:#0A1A1D;padding:16px 22px 28px}
+    .status-bar{display:flex;justify-content:space-between;margin-bottom:24px;font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:.5px}
+    .logo-wrap{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+    .logo-box{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#378ADD,#1D9E75);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:white;flex-shrink:0}
+    .logo-text{font-size:26px;font-weight:700;color:white;letter-spacing:1.5px}
+    .tagline{text-align:center;font-size:9px;color:#5DCAA5;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px}
+    .subtitle{text-align:center;font-size:10px;color:rgba(255,255,255,0.28);margin-bottom:18px;line-height:1.4}
+    .date-pill{display:flex;justify-content:center}
+    .date-pill span{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border:.5px solid rgba(255,255,255,0.12);border-radius:99px;padding:6px 16px;font-size:11px;color:rgba(255,255,255,0.5)}
+    .page-title-bar{background:#0A1A1D;padding:0 22px 20px;text-align:center}
+    .page-title-bar h1{font-size:18px;font-weight:700;color:white;letter-spacing:1px}
+    .page-divider{width:40px;height:2px;background:linear-gradient(90deg,#378ADD,#1D9E75);border-radius:99px;margin:8px auto 0}
+
+    /* STATUS BANNER */
+    .status-banner{margin:0 18px 0;border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:500;display:none}
+    .status-banner.show{display:flex}
+    .status-banner.queued{background:rgba(245,158,11,0.12);border:.5px solid rgba(245,158,11,0.3);color:#78350F}
+    .status-banner.sending{background:rgba(55,138,221,0.1);border:.5px solid rgba(55,138,221,0.25);color:#134E8A}
+    .status-banner.done{background:rgba(29,158,117,0.1);border:.5px solid rgba(29,158,117,0.25);color:#0A5C42}
+    .status-banner.failed{background:rgba(220,53,69,0.08);border:.5px solid rgba(220,53,69,0.25);color:#9B1C1C}
+    .banner-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .queued .banner-dot{background:#F59E0B;animation:pulse 1.5s infinite}
+    .sending .banner-dot{background:#378ADD;animation:pulse 0.8s infinite}
+    .done .banner-dot{background:#1D9E75}
+    .failed .banner-dot{background:#DC3545}
+
+    /* CONTENT */
+    .content-zone{background:#F0F2F1;padding:20px 18px 28px;margin-top:12px}
+    .section-lbl{font-size:10px;color:#999;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+
+    /* OPERATOR CARD */
+    .operator-card{background:white;border-radius:20px;border:.5px solid rgba(0,0,0,0.08);margin-bottom:16px;overflow:hidden}
+    .operator-card-header{background:rgba(29,158,117,0.07);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:.5px solid rgba(29,158,117,0.12)}
+    .op-badge{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;background:rgba(29,158,117,0.15);color:#0A5C42;padding:4px 10px;border-radius:99px}
+    .remove-btn{background:rgba(220,53,69,0.1);border:none;border-radius:8px;color:#dc3545;padding:5px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:500;font-family:inherit}
+    .operator-card-body{padding:18px}
+
+    /* FIELD */
+    .field{margin-bottom:14px}
+    .field:last-child{margin-bottom:0}
+    .field-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#999;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+    .field-label i{color:#1D9E75;font-size:13px}
+    .field-input{width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #E5E7E6;font-size:14px;color:#111;background:#FAFAFA;outline:none;transition:border-color .15s,background .15s;font-family:inherit}
+    .field-input:focus{border-color:#1D9E75;background:white}
+    .field-input.readonly{background:#F0F2F1;color:#555;border-color:transparent;cursor:default}
+    .field-input::placeholder{color:#BBB}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+    /* AUTOCOMPLETE */
+    .ac-wrap{position:relative}
+    .ac-drop{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border-radius:14px;border:1.5px solid #E5E7E6;z-index:100;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.12);display:none}
+    .ac-drop.open{display:block}
+    .ac-item{padding:11px 14px;cursor:pointer;font-size:13px;color:#111;border-bottom:.5px solid #F0F2F1;transition:background .1s}
+    .ac-item:last-child{border-bottom:none}
+    .ac-item:hover,.ac-item.active{background:#F0FBF7}
+    .ac-name{font-weight:500}
+    .ac-meta{font-size:11px;color:#999;margin-top:2px}
+    .ac-empty{padding:12px 14px;font-size:13px;color:#999;text-align:center}
+
+    /* ALASAN */
+    .alasan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .alasan-btn{padding:10px 12px;border-radius:12px;border:1.5px solid #E5E7E6;background:#FAFAFA;font-size:13px;font-weight:500;color:#555;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all .15s;font-family:inherit}
+    .alasan-btn i{font-size:16px}
+    .alasan-btn.sel-sakit{background:rgba(220,53,69,0.08);border-color:rgba(220,53,69,0.4);color:#9B1C1C}
+    .alasan-btn.sel-izin{background:rgba(55,138,221,0.08);border-color:rgba(55,138,221,0.4);color:#134E8A}
+    .alasan-btn.sel-cuti{background:rgba(29,158,117,0.08);border-color:rgba(29,158,117,0.4);color:#0A5C42}
+    .alasan-btn.sel-alfa{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.4);color:#78350F}
+
+    /* BUTTONS */
+    .add-btn{width:100%;padding:14px;border-radius:16px;border:1.5px dashed rgba(29,158,117,0.4);background:rgba(29,158,117,0.04);color:#0A5C42;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;margin-bottom:14px;font-family:inherit}
+    .add-btn:active{background:rgba(29,158,117,0.1);transform:scale(0.98)}
+    .submit-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#1D9E75,#378ADD);color:white;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s,transform .1s;letter-spacing:.3px;font-family:inherit}
+    .submit-btn:active{transform:scale(0.98);opacity:.9}
+    .submit-btn:disabled{opacity:.45;cursor:not-allowed}
+
+    /* QUEUE STATUS CARD */
+    .queue-card{background:white;border-radius:16px;border:.5px solid rgba(0,0,0,0.08);padding:14px 16px;margin-bottom:16px;display:none}
+    .queue-card.show{display:block}
+    .queue-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;margin-bottom:10px}
+    .queue-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:.5px solid #F5F5F5;font-size:12px}
+    .queue-item:last-child{border-bottom:none}
+    .qi-name{font-weight:500;color:#111;flex:1}
+    .qi-alasan{font-size:11px;color:#888;margin-right:10px}
+    .qi-status{font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;flex-shrink:0}
+    .qi-pending{background:rgba(245,158,11,0.12);color:#78350F}
+    .qi-sending{background:rgba(55,138,221,0.1);color:#134E8A}
+    .qi-ok{background:rgba(29,158,117,0.1);color:#0A5C42}
+    .qi-fail{background:rgba(220,53,69,0.08);color:#9B1C1C}
+
+    /* RETRY BTN */
+    .retry-btn{width:100%;padding:11px;border-radius:12px;border:1.5px solid rgba(220,53,69,0.3);background:rgba(220,53,69,0.06);color:#9B1C1C;font-size:13px;font-weight:500;cursor:pointer;display:none;align-items:center;justify-content:center;gap:6px;margin-top:10px;font-family:inherit}
+    .retry-btn.show{display:flex}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#111;color:white;padding:12px 20px;border-radius:14px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;display:flex;align-items:center;gap:8px;max-width:340px}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .toast.success{background:#0A5C42}
+    .toast.error{background:#9B1C1C}
+    .toast.info{background:#134E8A}
+
+    /* LOADING */
+    .loading-overlay{display:none;position:fixed;inset:0;background:rgba(10,26,29,0.7);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+    .loading-overlay.show{display:flex}
+    .spinner{width:40px;height:40px;border:3px solid rgba(29,158,117,0.2);border-top-color:#1D9E75;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-text{color:white;font-size:13px;opacity:.7}
+
+    /* FOOTER */
+    .footer-zone{background:#0A1A1D;padding:16px 18px 28px}
+    .live-row{display:flex;align-items:center;justify-content:center;gap:8px}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .live-txt{font-size:11px;color:rgba(255,255,255,0.3)}
+
+    @media(max-width:420px){
+      body{padding:0}
+      .phone{min-height:100vh}
+      .header-zone{padding-top:env(safe-area-inset-top,20px)}
+      .footer-zone{padding-bottom:env(safe-area-inset-bottom,28px)}
+    }
+  </style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- HEADER -->
+  <div class="header-zone">
+    <div class="status-bar">
+      <span>PT. ASI</span>
+      <span id="waktu">--:--</span>
+    </div>
+    <div class="logo-wrap">
+      <div class="logo-box">L</div>
+      <div class="logo-text">LITRA-ASI</div>
+    </div>
+    <div class="tagline">Leading Industrial Transformation</div>
+    <div class="subtitle">Lean Intelligence Tracking &amp; Realtime Analytics — ASI</div>
+    <div class="date-pill">
+      <span>
+        <i class="ti ti-calendar" style="font-size:13px"></i>
+        <span id="tgl">Memuat...</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="page-title-bar">
+    <h1>ABSENSI OPERATOR</h1>
+    <div class="page-divider"></div>
+  </div>
+
+  <!-- STATUS BANNER -->
+  <div class="status-banner" id="status-banner">
+    <div class="banner-dot"></div>
+    <span id="banner-text"></span>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content-zone">
+    <div class="section-lbl">
+      <i class="ti ti-users" style="font-size:12px;vertical-align:-1px"></i>
+      Input Operator Tidak Masuk
+    </div>
+
+    <!-- QUEUE MONITOR -->
+    <div class="queue-card" id="queue-card">
+      <div class="queue-title"><i class="ti ti-list-check" style="font-size:12px;vertical-align:-1px"></i> Status Pengiriman</div>
+      <div id="queue-list"></div>
+      <button class="retry-btn" id="retry-btn" onclick="retryFailed()">
+        <i class="ti ti-refresh"></i> Kirim ulang yang gagal
+      </button>
+    </div>
+
+    <div id="operators-container"></div>
+
+    <button class="add-btn" id="add-btn" onclick="addOperator()">
+      <i class="ti ti-plus" style="font-size:18px"></i>
+      Ada operator lain?
+    </button>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitAll()">
+      <i class="ti ti-send" style="font-size:18px"></i>
+      Kirim Data Absensi
+    </button>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-zone">
+    <div class="live-row">
+      <div class="live-dot"></div>
+      <div class="live-txt">Sistem aktif — PT. ASI Sewing Division</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Memuat data...</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// KONFIGURASI — isi setelah deploy Apps Script
+// ============================================================
+const GAS_READ_URL  = 'PASTE_URL_SCRIPT_BACA_DISINI';
+const GAS_WRITE_URL = 'PASTE_URL_SCRIPT_TULIS_DISINI';
+// ============================================================
+
+// --- QUEUE ENGINE ---
+// Setiap entry = { id, nama, noAbsen, line, style, proses, alasan, tanggal, jam, status, retries }
+// status: 'pending' | 'sending' | 'ok' | 'failed'
+const MAX_RETRIES   = 3;
+const RETRY_DELAY   = 2000;  // ms antar retry
+const QUEUE_DELAY   = 600;   // ms antar item di queue (throttle GAS)
+
+let queue     = [];
+let isFlushing = false;
+let masterData = [];
+let opCount   = 0;
+
+// =====================
+// CLOCK
+// =====================
+function updateClock() {
+  const n = new Date();
+  document.getElementById('waktu').textContent =
+    n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
+  const days   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  document.getElementById('tgl').textContent =
+    days[n.getDay()] + ', ' + n.getDate() + ' ' + months[n.getMonth()] + ' ' + n.getFullYear();
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// =====================
+// TOAST
+// =====================
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  const icon = type==='success'?'ti-check':type==='error'?'ti-alert-circle':'ti-info-circle';
+  t.className = 'toast ' + type;
+  t.innerHTML = `<i class="ti ${icon}"></i>${msg}`;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+// =====================
+// LOADING
+// =====================
+function setLoading(show, txt='Memuat...') {
+  document.getElementById('loading-text').textContent = txt;
+  document.getElementById('loading').classList.toggle('show', show);
+}
+
+// =====================
+// BANNER
+// =====================
+function setBanner(type, msg) {
+  const b = document.getElementById('status-banner');
+  const t = document.getElementById('banner-text');
+  b.className = 'status-banner show ' + type;
+  t.textContent = msg;
+  if (!msg) b.classList.remove('show');
+}
+
+// =====================
+// LOAD MASTER DATA
+// =====================
+async function loadMaster() {
+  if (GAS_READ_URL === 'PASTE_URL_SCRIPT_BACA_DISINI') {
+    toast('URL Script belum dikonfigurasi — mode demo', 'info');
+    addOperator(); return;
+  }
+  setLoading(true, 'Memuat data operator...');
+  try {
+    const res  = await fetchWithTimeout(GAS_READ_URL, {}, 15000);
+    const json = await res.json();
+    if (json.status === 'ok') {
+      masterData = json.data;
+      toast('Data operator dimuat (' + masterData.length + ')', 'success');
+    } else throw new Error(json.message);
+  } catch(e) {
+    toast('Gagal muat data: ' + e.message, 'error');
+  } finally {
+    setLoading(false);
+    addOperator();
+  }
+}
+
+// =====================
+// FETCH WITH TIMEOUT
+// =====================
+function fetchWithTimeout(url, opts={}, ms=12000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal })
+    .finally(()=>clearTimeout(id));
+}
+
+// =====================
+// OPERATOR FORM
+// =====================
+function addOperator() {
+  opCount++;
+  const idx = opCount;
+  const el  = document.createElement('div');
+  el.className = 'operator-card';
+  el.id = 'op-' + idx;
+  el.innerHTML = `
+    <div class="operator-card-header">
+      <span class="op-badge">Operator #${idx}</span>
+      ${idx>1?`<button class="remove-btn" onclick="removeOp(${idx})"><i class="ti ti-trash"></i> Hapus</button>`:''}
+    </div>
+    <div class="operator-card-body">
+      <div class="field">
+        <div class="field-label"><i class="ti ti-user"></i> Nama Operator</div>
+        <div class="ac-wrap">
+          <input type="text" class="field-input" id="nama-${idx}" placeholder="Ketik nama operator..."
+            autocomplete="off" oninput="onInput(${idx})" onfocus="onInput(${idx})" onblur="hideAc(${idx})">
+          <div class="ac-drop" id="ac-${idx}"></div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label"><i class="ti ti-id-badge"></i> No. Absen</div>
+        <input type="text" class="field-input readonly" id="absen-${idx}" readonly placeholder="Otomatis terisi">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label"><i class="ti ti-layout-grid"></i> Line</div>
+          <input type="text" class="field-input readonly" id="line-${idx}" readonly placeholder="—">
+        </div>
+        <div class="field">
+          <div class="field-label"><i class="ti ti-shirt"></i> Style</div>
+          <input type="text" class="field-input readonly" id="style-${idx}" readonly placeholder="—">
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label"><i class="ti ti-tool"></i> Proses</div>
+        <input type="text" class="field-input readonly" id="proses-${idx}" readonly placeholder="—">
+      </div>
+      <div class="field">
+        <div class="field-label"><i class="ti ti-clipboard-list"></i> Alasan Tidak Masuk</div>
+        <div class="alasan-grid">
+          <button class="alasan-btn" id="al-sakit-${idx}" onclick="pilihAlasan(${idx},'Sakit')"><i class="ti ti-thermometer"></i> Sakit</button>
+          <button class="alasan-btn" id="al-izin-${idx}"  onclick="pilihAlasan(${idx},'Izin')"><i class="ti ti-file-text"></i> Izin</button>
+          <button class="alasan-btn" id="al-cuti-${idx}"  onclick="pilihAlasan(${idx},'Cuti')"><i class="ti ti-beach"></i> Cuti</button>
+          <button class="alasan-btn" id="al-alfa-${idx}"  onclick="pilihAlasan(${idx},'Alfa')"><i class="ti ti-alert-triangle"></i> Alfa</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('operators-container').appendChild(el);
+  setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}), 80);
+}
+
+function removeOp(idx) {
+  const c = document.getElementById('op-' + idx);
+  if (c) c.remove();
+}
+
+// =====================
+// AUTOCOMPLETE
+// =====================
+function onInput(idx) {
+  const val  = (document.getElementById('nama-'+idx).value||'').trim().toLowerCase();
+  const drop = document.getElementById('ac-'+idx);
+  if (!val || !masterData.length) { drop.classList.remove('open'); return; }
+  const hits = masterData.filter(o=>o.nama.toLowerCase().includes(val)).slice(0,8);
+  if (!hits.length) {
+    drop.innerHTML = '<div class="ac-empty">Tidak ditemukan</div>';
+  } else {
+    drop.innerHTML = hits.map(o=>`
+      <div class="ac-item" onmousedown="pilihOp(${idx},'${esc(o.nama)}','${esc(o.noAbsen)}','${esc(o.line)}','${esc(o.style)}','${esc(o.proses)}')">
+        <div class="ac-name">${o.nama}</div>
+        <div class="ac-meta">No.${o.noAbsen} · ${o.line} · ${o.proses}</div>
+      </div>`).join('');
+  }
+  drop.classList.add('open');
+}
+
+function hideAc(idx) {
+  setTimeout(()=>{ const d=document.getElementById('ac-'+idx); if(d) d.classList.remove('open'); }, 200);
+}
+
+function pilihOp(idx, nama, absen, line, style, proses) {
+  document.getElementById('nama-'+idx).value  = nama;
+  document.getElementById('absen-'+idx).value = absen;
+  document.getElementById('line-'+idx).value  = line;
+  document.getElementById('style-'+idx).value = style;
+  document.getElementById('proses-'+idx).value= proses;
+  document.getElementById('ac-'+idx).classList.remove('open');
+}
+
+function esc(s){ return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// =====================
+// ALASAN
+// =====================
+function pilihAlasan(idx, alasan) {
+  const map = {Sakit:'sakit',Izin:'izin',Cuti:'cuti',Alfa:'alfa'};
+  Object.keys(map).forEach(a=>{
+    const b = document.getElementById('al-'+a.toLowerCase()+'-'+idx);
+    if(b) b.className='alasan-btn';
+  });
+  const btn = document.getElementById('al-'+map[alasan]+'-'+idx);
+  if(btn) btn.classList.add('sel-'+map[alasan]);
+  const card = document.getElementById('op-'+idx);
+  if(card) card.dataset.alasan = alasan;
+}
+
+// =====================
+// SUBMIT — masukkan ke queue
+// =====================
+function submitAll() {
+  const cards = document.querySelectorAll('.operator-card');
+  if (!cards.length) { toast('Belum ada operator diinput','error'); return; }
+
+  const now     = new Date();
+  const tanggal = now.getDate().toString().padStart(2,'0')+'/'+(now.getMonth()+1).toString().padStart(2,'0')+'/'+now.getFullYear();
+  const jam     = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+
+  let valid = true;
+  const newItems = [];
+
+  cards.forEach(card => {
+    const idx    = card.id.replace('op-','');
+    const nama   = (document.getElementById('nama-'+idx)?.value||'').trim();
+    const absen  = (document.getElementById('absen-'+idx)?.value||'').trim();
+    const line   = (document.getElementById('line-'+idx)?.value||'').trim();
+    const style  = (document.getElementById('style-'+idx)?.value||'').trim();
+    const proses = (document.getElementById('proses-'+idx)?.value||'').trim();
+    const alasan = card.dataset.alasan||'';
+
+    if (!nama)   { toast('Nama operator #'+idx+' belum diisi','error'); valid=false; return; }
+    if (!alasan) { toast('Alasan '+nama+' belum dipilih','error');       valid=false; return; }
+
+    newItems.push({
+      id: Date.now()+'-'+idx,
+      nama, absen, line, style, proses, alasan, tanggal, jam,
+      status: 'pending', retries: 0
+    });
+  });
+
+  if (!valid) return;
+
+  // Masukkan ke queue
+  queue.push(...newItems);
+  renderQueue();
+
+  // Disable submit & reset form setelah confirm
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('add-btn').disabled    = true;
+  setTimeout(()=>{
+    document.getElementById('operators-container').innerHTML = '';
+    opCount = 0;
+    addOperator();
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('add-btn').disabled    = false;
+  }, 800);
+
+  toast(newItems.length+' operator masuk antrean pengiriman','info');
+  flushQueue();
+}
+
+// =====================
+// QUEUE FLUSH — kirim 1 per 1
+// =====================
+async function flushQueue() {
+  if (isFlushing) return;
+  isFlushing = true;
+
+  const pending = queue.filter(q=>q.status==='pending');
+  if (!pending.length) { isFlushing=false; checkDone(); return; }
+
+  setBanner('sending', 'Mengirim data... ('+pending.length+' antrian)');
+
+  for (const item of pending) {
+    if (item.status !== 'pending') continue;
+    item.status = 'sending';
+    renderQueue();
+
+    const ok = await sendOne(item);
+
+    if (ok) {
+      item.status = 'ok';
+    } else {
+      item.retries++;
+      if (item.retries < MAX_RETRIES) {
+        // Retry dengan delay
+        item.status = 'pending';
+        await sleep(RETRY_DELAY);
+        // kirim ulang dalam loop ini
+        const ok2 = await sendOne(item);
+        item.status = ok2 ? 'ok' : (item.retries >= MAX_RETRIES ? 'failed' : 'pending');
+        if (!ok2) item.retries++;
+      } else {
+        item.status = 'failed';
+      }
+    }
+    renderQueue();
+    await sleep(QUEUE_DELAY);
+  }
+
+  isFlushing = false;
+  checkDone();
+}
+
+// =====================
+// SEND SINGLE ITEM
+// =====================
+async function sendOne(item) {
+  if (GAS_WRITE_URL === 'PASTE_URL_SCRIPT_TULIS_DISINI') {
+    // Mode demo — simulasi sukses
+    await sleep(800);
+    return true;
+  }
+  try {
+    const res  = await fetchWithTimeout(GAS_WRITE_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        tanggal: item.tanggal,
+        jam:     item.jam,
+        rows: [{
+          nama:    item.nama,
+          noAbsen: item.absen,
+          line:    item.line,
+          style:   item.style,
+          proses:  item.proses,
+          alasan:  item.alasan
+        }]
+      })
+    }, 15000);
+    const json = await res.json();
+    return json.status === 'ok';
+  } catch(e) {
+    return false;
+  }
+}
+
+// =====================
+// RETRY FAILED
+// =====================
+function retryFailed() {
+  const failed = queue.filter(q=>q.status==='failed');
+  if (!failed.length) return;
+  failed.forEach(q=>{ q.status='pending'; q.retries=0; });
+  renderQueue();
+  document.getElementById('retry-btn').classList.remove('show');
+  flushQueue();
+}
+
+// =====================
+// CHECK DONE
+// =====================
+function checkDone() {
+  const total   = queue.length;
+  const ok      = queue.filter(q=>q.status==='ok').length;
+  const failed  = queue.filter(q=>q.status==='failed').length;
+  const pending = queue.filter(q=>q.status==='pending'||q.status==='sending').length;
+
+  if (pending > 0) return;
+
+  if (failed === 0) {
+    setBanner('done', 'Semua data berhasil terkirim ✓ ('+ok+' operator)');
+    toast('Semua data absensi terkirim!','success');
+    setTimeout(()=>{ queue=[]; renderQueue(); setBanner('',''); }, 5000);
+  } else {
+    setBanner('failed', failed+' data gagal terkirim — tap "Kirim ulang"');
+    toast(failed+' data gagal — klik kirim ulang','error');
+    document.getElementById('retry-btn').classList.add('show');
+  }
+}
+
+// =====================
+// RENDER QUEUE UI
+// =====================
+function renderQueue() {
+  const card = document.getElementById('queue-card');
+  const list = document.getElementById('queue-list');
+  if (!queue.length) { card.classList.remove('show'); return; }
+  card.classList.add('show');
+
+  const statusLabel = { pending:'Menunggu', sending:'Mengirim...', ok:'Terkirim ✓', failed:'Gagal' };
+  const statusClass = { pending:'qi-pending', sending:'qi-sending', ok:'qi-ok', failed:'qi-fail' };
+
+  list.innerHTML = queue.map(q=>`
+    <div class="queue-item">
+      <span class="qi-name">${q.nama}</span>
+      <span class="qi-alasan">${q.alasan}</span>
+      <span class="qi-status ${statusClass[q.status]}">${statusLabel[q.status]}</span>
+    </div>`).join('');
+}
+
+// =====================
+// UTIL
+// =====================
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// =====================
+// INIT
+// =====================
+window.addEventListener('DOMContentLoaded', loadMaster);
+</script>
+</body>
+</html>
